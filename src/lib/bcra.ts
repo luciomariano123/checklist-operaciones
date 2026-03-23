@@ -7,32 +7,66 @@ import { SITUACIONES_BCRA } from "./checklist-config";
 const BCRA_BASE = "https://api.bcra.gob.ar";
 
 /**
- * El BCRA usa TLS 1.2 con configuración que Node.js 18+ rechaza con fetch/undici.
- * Usamos curl como subprocess (disponible en macOS/Linux) para la petición.
+ * La API del BCRA tiene una configuración TLS que el módulo fetch/undici de Node.js
+ * no puede manejar (ECONNRESET). Usamos curl que sí funciona con `-k`.
+ * Esta función detecta la ruta de curl automáticamente:
+ * - En macOS dev: /usr/bin/curl (el del sistema, no el de Anaconda)
+ * - En Railway/Linux: /usr/bin/curl instalado vía nixpacks
  */
+async function getCurlPath(): Promise<string> {
+  const { access } = await import("fs/promises");
+  const candidates = ["/usr/bin/curl", "/usr/local/bin/curl", "/bin/curl"];
+  for (const p of candidates) {
+    try {
+      await access(p);
+      return p;
+    } catch {
+      // continuar con el siguiente
+    }
+  }
+  return "curl"; // fallback al PATH del sistema
+}
+
 async function fetchViaCurl(url: string): Promise<{ status: number; body: string }> {
   const { execFile } = require("child_process") as typeof import("child_process");
   const { promisify } = require("util") as typeof import("util");
   const execFileAsync = promisify(execFile);
 
-  // Preferir el curl del sistema (/usr/bin/curl) para evitar problemas de SSL
-  // con versiones de curl de Anaconda u otros entornos
-  const curlPath = "/usr/bin/curl";
-
-  const { stdout } = await execFileAsync(curlPath, [
-    "-s",
-    "-k",
-    "--max-time", "10",
+  const curlPath = await getCurlPath();
+  const args = [
+    "-s", "-k", "--max-time", "15",
     "-H", "Accept: application/json",
     "-H", "User-Agent: Mozilla/5.0",
     "-w", "\n__STATUS__%{http_code}",
     url,
-  ]);
+  ];
 
-  const parts = stdout.split("\n__STATUS__");
-  const body = parts[0] ?? "";
-  const status = parseInt(parts[1] ?? "0", 10);
-  return { status, body };
+  // Reintentos: la API del BCRA a veces cierra la conexión (rate limit / TLS)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+    try {
+      const { stdout } = await execFileAsync(curlPath, args);
+      const parts = stdout.split("\n__STATUS__");
+      const body = parts[0] ?? "";
+      const status = parseInt(parts[1] ?? "0", 10);
+      if (status > 0) return { status, body };
+      // status 0 = curl no pudo completar, reintentar
+    } catch (err: unknown) {
+      // execFile lanza si curl retorna exit code != 0
+      // recuperar stdout del error para ver si igual tenemos datos
+      const e = err as { stdout?: string; code?: number };
+      if (e.stdout) {
+        const parts = e.stdout.split("\n__STATUS__");
+        const body = parts[0] ?? "";
+        const status = parseInt(parts[1] ?? "0", 10);
+        if (status > 0) return { status, body };
+      }
+      if (attempt === 2) throw err;
+    }
+  }
+  throw new Error("BCRA: no se pudo obtener respuesta tras 3 intentos");
 }
 
 export async function consultarBCRA(cuit: string): Promise<BCRAStatus> {
