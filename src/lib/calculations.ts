@@ -75,7 +75,8 @@ export function evaluarMetricas(calc: MetricasCalculadas): MetricaEstado {
 export function evaluarChecklistItem(
   itemId: number,
   respuesta: "si" | "no" | null,
-  archivoIds: string[]
+  archivoIds: string[],
+  adminOverride = false
 ): EstadoItem {
   if (respuesta === null) return "pendiente";
 
@@ -84,8 +85,8 @@ export function evaluarChecklistItem(
 
   if (respuesta === "si") {
     const estadoBase = def.siAceptable ? "aceptable" : "no_aceptable";
-    // Ítem 1: si dice "Sí" pero no tiene documentación, queda pendiente
-    if (def.requiereDocumentacion && archivoIds.length === 0) {
+    // Ítem 1: si dice "Sí" pero no tiene documentación, queda pendiente (salvo admin override)
+    if (def.requiereDocumentacion && archivoIds.length === 0 && !adminOverride) {
       return "pendiente";
     }
     return estadoBase;
@@ -109,7 +110,7 @@ export function calcularEstadoGeneral(
   for (const item of checklist) {
     const def = CHECKLIST_ITEMS.find((d) => d.id === item.id);
     if (!def) continue;
-    const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds);
+    const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds, adminOverride);
     if (estado === "no_aceptable") {
       motivos.push(`Criterio excluyente: "${def.titulo}"`);
     }
@@ -138,7 +139,7 @@ export function calcularEstadoGeneral(
 
   // Verificar pendientes
   const hayPendiente = checklist.some(
-    (item) => evaluarChecklistItem(item.id, item.respuesta, item.archivoIds) === "pendiente"
+    (item) => evaluarChecklistItem(item.id, item.respuesta, item.archivoIds, adminOverride) === "pendiente"
   );
   const faltanMetricas =
     metEstado.lineaPN === "sin_datos" ||
@@ -153,7 +154,7 @@ export function calcularEstadoGeneral(
   if (hayPendiente || faltanMetricas || docsObligatoriosFaltantes.length > 0) {
     const pendMotivos: string[] = [];
     checklist.forEach((item) => {
-      const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds);
+      const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds, adminOverride);
       if (estado === "pendiente") {
         const def = CHECKLIST_ITEMS.find((d) => d.id === item.id);
         if (def) pendMotivos.push(`Pendiente: "${def.titulo}"`);

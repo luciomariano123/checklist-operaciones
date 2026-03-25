@@ -351,7 +351,7 @@ export function CasoForm({ caso }: Props) {
       )}
 
       {/* ─── Checklist ─────────────────────────────────────────── */}
-      <ChecklistSection items={checklist} onChange={setChecklist} />
+      <ChecklistSection items={checklist} onChange={setChecklist} adminOverride={adminOverride} />
 
       {/* ─── Métricas ──────────────────────────────────────────── */}
       <FinancialsSection metricas={metricas} onChange={setMetricas} />

@@ -11,18 +11,19 @@ interface Props {
   items: ChecklistItemData[];
   onChange: (items: ChecklistItemData[]) => void;
   readOnly?: boolean;
+  adminOverride?: boolean;
 }
 
-export function ChecklistSection({ items, onChange, readOnly = false }: Props) {
+export function ChecklistSection({ items, onChange, readOnly = false, adminOverride = false }: Props) {
   const updateItem = (id: number, patch: Partial<ChecklistItemData>) => {
     onChange(items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
   const countAceptables = items.filter(
-    (i) => evaluarChecklistItem(i.id, i.respuesta, i.archivoIds) === "aceptable"
+    (i) => evaluarChecklistItem(i.id, i.respuesta, i.archivoIds, adminOverride) === "aceptable"
   ).length;
   const countRechazados = items.filter(
-    (i) => evaluarChecklistItem(i.id, i.respuesta, i.archivoIds) === "no_aceptable"
+    (i) => evaluarChecklistItem(i.id, i.respuesta, i.archivoIds, adminOverride) === "no_aceptable"
   ).length;
 
   const badgeSummary = (
@@ -49,7 +50,7 @@ export function ChecklistSection({ items, onChange, readOnly = false }: Props) {
         {CHECKLIST_ITEMS.map((def) => {
           const itemData = items.find((i) => i.id === def.id);
           if (!itemData) return null;
-          const estado = evaluarChecklistItem(def.id, itemData.respuesta, itemData.archivoIds);
+          const estado = evaluarChecklistItem(def.id, itemData.respuesta, itemData.archivoIds, adminOverride);
 
           return (
             <ChecklistRow
@@ -58,6 +59,7 @@ export function ChecklistSection({ items, onChange, readOnly = false }: Props) {
               itemData={itemData}
               estado={estado}
               readOnly={readOnly}
+              adminOverride={adminOverride}
               onUpdate={(patch) => updateItem(def.id, patch)}
             />
           );
@@ -72,10 +74,11 @@ interface RowProps {
   itemData: ChecklistItemData;
   estado: ReturnType<typeof evaluarChecklistItem>;
   readOnly: boolean;
+  adminOverride: boolean;
   onUpdate: (patch: Partial<ChecklistItemData>) => void;
 }
 
-function ChecklistRow({ def, itemData, estado, readOnly, onUpdate }: RowProps) {
+function ChecklistRow({ def, itemData, estado, readOnly, adminOverride, onUpdate }: RowProps) {
   const [showHelp, setShowHelp] = useState(false);
 
   return (
@@ -141,8 +144,11 @@ function ChecklistRow({ def, itemData, estado, readOnly, onUpdate }: RowProps) {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 Sujeto a documentación respaldatoria
-                {itemData.archivoIds.length === 0 && (
+                {itemData.archivoIds.length === 0 && !adminOverride && (
                   <span className="text-red-600 font-semibold ml-1">· Documentación pendiente</span>
+                )}
+                {itemData.archivoIds.length === 0 && adminOverride && (
+                  <span className="text-amber-600 font-semibold ml-1">· Salteado por Admin</span>
                 )}
               </div>
             )}
