@@ -11,12 +11,14 @@ import { FinancialsSection } from "@/components/casos/FinancialsSection";
 import { DocumentsSection } from "@/components/casos/DocumentsSection";
 import { ResultPanel } from "@/components/casos/ResultPanel";
 import { BCRAWidget } from "@/components/bcra/BCRAWidget";
+import { EnviarMailModal } from "@/components/casos/EnviarMailModal";
 
 export default function DetalleCasoPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [caso, setCaso] = useState<Caso | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showMailModal, setShowMailModal] = useState(false);
 
   useEffect(() => {
     const found = store.getById(id);
@@ -74,6 +76,18 @@ export default function DetalleCasoPage() {
           </div>
         </div>
         <div className="flex gap-2 print:hidden">
+          {/* Botón ENVIAR POR MAIL — solo para No Aceptable */}
+          {caso.estadoGeneral === "no_aceptable" && (
+            <button
+              onClick={() => setShowMailModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Solicitar excepción
+            </button>
+          )}
           <button
             onClick={() => window.print()}
             className="btn-secondary"
@@ -178,6 +192,11 @@ export default function DetalleCasoPage() {
           <> · Actualizado el {new Date(caso.actualizadoEn).toLocaleString("es-AR")}</>
         )}
       </div>
+
+      {/* Modal enviar mail */}
+      {showMailModal && (
+        <EnviarMailModal caso={caso} onClose={() => setShowMailModal(false)} />
+      )}
     </div>
   );
 }
