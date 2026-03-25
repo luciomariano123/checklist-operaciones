@@ -137,24 +137,28 @@ export function calcularEstadoGeneral(
     return { estado: "no_aceptable", motivos };
   }
 
+  // Admin override: saltea todos los pendientes (checklist, métricas y docs)
+  if (adminOverride) {
+    return { estado: "aceptable", motivos: ["Override de Admin: ítems pendientes salteados"] };
+  }
+
   // Verificar pendientes
   const hayPendiente = checklist.some(
-    (item) => evaluarChecklistItem(item.id, item.respuesta, item.archivoIds, adminOverride) === "pendiente"
+    (item) => evaluarChecklistItem(item.id, item.respuesta, item.archivoIds) === "pendiente"
   );
   const faltanMetricas =
     metEstado.lineaPN === "sin_datos" ||
     metEstado.liquidezCorriente === "sin_datos" ||
     metEstado.fondeoPropio === "sin_datos";
 
-  // Verificar documentos obligatorios (NOSIS, DDJJ) — omitir si admin override
-  const docsObligatoriosFaltantes = adminOverride
-    ? []
-    : CATEGORIAS_OBLIGATORIAS.filter((cat) => !documentos.some((d) => d.categoria === cat));
+  const docsObligatoriosFaltantes = CATEGORIAS_OBLIGATORIAS.filter(
+    (cat) => !documentos.some((d) => d.categoria === cat)
+  );
 
   if (hayPendiente || faltanMetricas || docsObligatoriosFaltantes.length > 0) {
     const pendMotivos: string[] = [];
     checklist.forEach((item) => {
-      const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds, adminOverride);
+      const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds);
       if (estado === "pendiente") {
         const def = CHECKLIST_ITEMS.find((d) => d.id === item.id);
         if (def) pendMotivos.push(`Pendiente: "${def.titulo}"`);
