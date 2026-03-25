@@ -163,7 +163,13 @@ export async function consultarBCRA(cuit: string): Promise<BCRAStatus> {
       detalle,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Error desconocido";
+    // No exponer detalles internos (ruta de curl, comandos) al usuario
+    const raw = err instanceof Error ? err.message : "Error desconocido";
+    const esTimeout = raw.includes("ETIMEDOUT") || raw.includes("max-time") || raw.includes("28");
+    const esConexion = raw.includes("ECONNRESET") || raw.includes("ENOTFOUND") || raw.includes("7") || raw.includes("56");
+    let mensaje = "No se pudo conectar con la API del BCRA.";
+    if (esTimeout) mensaje = "La API del BCRA no respondió a tiempo (timeout).";
+    else if (esConexion) mensaje = "No se pudo establecer conexión con api.bcra.gob.ar.";
     return {
       cuit: cuitLimpio,
       denominacion: "",
@@ -172,7 +178,7 @@ export async function consultarBCRA(cuit: string): Promise<BCRAStatus> {
       estado: "sin_datos",
       ultimoPeriodo: "",
       detalle: [],
-      error: `No se pudo consultar la API BCRA: ${message}`,
+      error: mensaje,
     };
   }
 }
