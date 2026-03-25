@@ -52,6 +52,9 @@ export function CasoForm({ caso }: Props) {
   // ── Documentos ────────────────────────────────────────────────
   const [documentos, setDocumentos] = useState<Documento[]>(caso?.documentos ?? []);
 
+  // ── Admin override ────────────────────────────────────────────
+  const [adminOverride, setAdminOverride] = useState(caso?.adminOverrideDocsObligatorios ?? false);
+
   // ── Reutilización NOSIS ───────────────────────────────────────
   const [casoReciente, setCasoReciente] = useState<Caso | null>(null);
 
@@ -109,7 +112,7 @@ export function CasoForm({ caso }: Props) {
   );
 
   // ── Resultado live ────────────────────────────────────────────
-  const { estado, motivos } = calcularEstadoGeneral(checklist, metricas, documentos);
+  const { estado, motivos } = calcularEstadoGeneral(checklist, metricas, documentos, adminOverride);
 
   // ── Submit ────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -137,6 +140,7 @@ export function CasoForm({ caso }: Props) {
       actualizadoPor: "Usuario",
       historial: caso?.historial ?? [],
       observacionesInternas: caso?.observacionesInternas ?? [],
+      adminOverrideDocsObligatorios: adminOverride,
     };
 
     try {
@@ -173,6 +177,7 @@ export function CasoForm({ caso }: Props) {
       actualizadoPor: "Usuario",
       historial: caso?.historial ?? [],
       observacionesInternas: caso?.observacionesInternas ?? [],
+      adminOverrideDocsObligatorios: adminOverride,
     };
     if (isEdit && caso) {
       store.update(caso.id, payload);
@@ -353,6 +358,27 @@ export function CasoForm({ caso }: Props) {
 
       {/* ─── Documentación ─────────────────────────────────────── */}
       <DocumentsSection documentos={documentos} onChange={setDocumentos} />
+
+      {/* ─── Override Admin ────────────────────────────────────── */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-amber-800">Override de documentos obligatorios</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            Solo Admin — permite aprobar sin adjuntar NOSIS y DDJJ. Quedará registrado en el caso.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <span className="text-xs font-semibold text-amber-700">{adminOverride ? "Activo" : "Inactivo"}</span>
+          <div
+            onClick={() => setAdminOverride((v) => !v)}
+            className={`relative w-11 h-6 rounded-full transition-colors ${adminOverride ? "bg-amber-500" : "bg-slate-300"}`}
+          >
+            <span
+              className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${adminOverride ? "translate-x-5" : "translate-x-0"}`}
+            />
+          </div>
+        </label>
+      </div>
 
       {/* ─── Resultado live ────────────────────────────────────── */}
       <ResultPanel

@@ -100,7 +100,8 @@ export function evaluarChecklistItem(
 export function calcularEstadoGeneral(
   checklist: ChecklistItemData[],
   metricas: MetricasInput,
-  documentos: Documento[] = []
+  documentos: Documento[] = [],
+  adminOverride = false
 ): { estado: EstadoGeneral; motivos: string[] } {
   const motivos: string[] = [];
 
@@ -144,10 +145,10 @@ export function calcularEstadoGeneral(
     metEstado.liquidezCorriente === "sin_datos" ||
     metEstado.fondeoPropio === "sin_datos";
 
-  // Verificar documentos obligatorios (NOSIS, DDJJ)
-  const docsObligatoriosFaltantes = CATEGORIAS_OBLIGATORIAS.filter(
-    (cat) => !documentos.some((d) => d.categoria === cat)
-  );
+  // Verificar documentos obligatorios (NOSIS, DDJJ) — omitir si admin override
+  const docsObligatoriosFaltantes = adminOverride
+    ? []
+    : CATEGORIAS_OBLIGATORIAS.filter((cat) => !documentos.some((d) => d.categoria === cat));
 
   if (hayPendiente || faltanMetricas || docsObligatoriosFaltantes.length > 0) {
     const pendMotivos: string[] = [];

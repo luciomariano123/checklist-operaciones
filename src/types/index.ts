@@ -173,6 +173,8 @@ export interface Caso {
   historial: HistorialCambio[];
   // BCRA cache
   bcraStatus?: BCRAStatus;
+  // Admin override
+  adminOverrideDocsObligatorios?: boolean;
 }
 
 export type CasoForm = Omit<Caso, "id" | "creadoEn" | "actualizadoEn" | "historial" | "observacionesInternas" | "estadoGeneral" | "motivosRechazo">;
