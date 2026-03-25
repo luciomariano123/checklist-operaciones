@@ -392,6 +392,7 @@ export function CasoForm({ caso }: Props) {
           motivosRechazo: motivos,
           creadoPor: "Usuario",
           actualizadoPor: "Usuario",
+          adminOverrideDocsObligatorios: adminOverride,
         }}
       />
 

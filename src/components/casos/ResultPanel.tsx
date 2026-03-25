@@ -12,7 +12,12 @@ interface Props {
 export function ResultPanel({ caso }: Props) {
   if (!caso.checklist || !caso.metricas) return null;
 
-  const { estado, motivos } = calcularEstadoGeneral(caso.checklist, caso.metricas);
+  const { estado, motivos } = calcularEstadoGeneral(
+    caso.checklist,
+    caso.metricas,
+    caso.documentos ?? [],
+    caso.adminOverrideDocsObligatorios ?? false
+  );
   const calc = calcularMetricas(caso.metricas);
 
   const docsCount = caso.documentos?.length ?? 0;
