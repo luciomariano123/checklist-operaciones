@@ -5,8 +5,9 @@ import type {
   MetricasInput,
   MetricasCalculadas,
   MetricaEstado,
+  Documento,
 } from "@/types";
-import { CHECKLIST_ITEMS } from "./checklist-config";
+import { CHECKLIST_ITEMS, CATEGORIAS_OBLIGATORIAS } from "./checklist-config";
 
 // ─── Métricas financieras ────────────────────────────────────────────────────
 
@@ -98,7 +99,8 @@ export function evaluarChecklistItem(
 
 export function calcularEstadoGeneral(
   checklist: ChecklistItemData[],
-  metricas: MetricasInput
+  metricas: MetricasInput,
+  documentos: Documento[] = []
 ): { estado: EstadoGeneral; motivos: string[] } {
   const motivos: string[] = [];
 
@@ -142,7 +144,12 @@ export function calcularEstadoGeneral(
     metEstado.liquidezCorriente === "sin_datos" ||
     metEstado.fondeoPropio === "sin_datos";
 
-  if (hayPendiente || faltanMetricas) {
+  // Verificar documentos obligatorios (NOSIS, DDJJ)
+  const docsObligatoriosFaltantes = CATEGORIAS_OBLIGATORIAS.filter(
+    (cat) => !documentos.some((d) => d.categoria === cat)
+  );
+
+  if (hayPendiente || faltanMetricas || docsObligatoriosFaltantes.length > 0) {
     const pendMotivos: string[] = [];
     checklist.forEach((item) => {
       const estado = evaluarChecklistItem(item.id, item.respuesta, item.archivoIds);
@@ -152,6 +159,10 @@ export function calcularEstadoGeneral(
       }
     });
     if (faltanMetricas) pendMotivos.push("Faltan datos financieros para calcular métricas");
+    const LABELS: Record<string, string> = { nosis: "Informe NOSIS", ddjj: "DDJJ (Declaración Jurada)" };
+    docsObligatoriosFaltantes.forEach((cat) =>
+      pendMotivos.push(`Documento obligatorio faltante: ${LABELS[cat] ?? cat}`)
+    );
     return { estado: "pendiente", motivos: pendMotivos };
   }
 

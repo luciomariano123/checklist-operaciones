@@ -107,6 +107,8 @@ export const CHECKLIST_ITEMS: ChecklistItemDef[] = [
 ];
 
 export const CATEGORIAS_DOCUMENTO: Record<string, string> = {
+  nosis: "Informe NOSIS",
+  ddjj: "DDJJ (Declaración Jurada)",
   eecc_ultimos_3: "Últimos 3 EECC",
   eecc_borrador: "Borrador de EECC (ejercicio cerrado no auditado)",
   ventas_post_cierre: "Ventas post cierre de balance (≥24 meses)",
@@ -118,6 +120,9 @@ export const CATEGORIAS_DOCUMENTO: Record<string, string> = {
   inversor_calificado: "Documentación de inversor calificado",
   otros: "Otros",
 };
+
+// Categorías que bloquean el estado "Aceptable" si no tienen documentos adjuntos
+export const CATEGORIAS_OBLIGATORIAS: string[] = ["nosis", "ddjj"];
 
 export const MONEDAS = [
   { value: "ARS", label: "Pesos Argentinos (ARS)" },

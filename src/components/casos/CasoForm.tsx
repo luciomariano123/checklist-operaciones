@@ -52,6 +52,41 @@ export function CasoForm({ caso }: Props) {
   // ── Documentos ────────────────────────────────────────────────
   const [documentos, setDocumentos] = useState<Documento[]>(caso?.documentos ?? []);
 
+  // ── Reutilización NOSIS ───────────────────────────────────────
+  const [casoReciente, setCasoReciente] = useState<Caso | null>(null);
+
+  const handleCuitChange = (value: string) => {
+    const formatted = formatCUIT(value);
+    setCuit(formatted);
+    // Buscar casos del mismo CUIT en los últimos 30 días
+    const normalized = formatted.replace(/[-\s]/g, "");
+    if (normalized.length >= 10) {
+      const treintaDias = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const recientes = store
+        .getByCuit(normalized)
+        .filter((c) => !isEdit || c.id !== caso?.id)
+        .filter((c) => new Date(c.creadoEn).getTime() > treintaDias);
+      setCasoReciente(recientes[0] ?? null);
+    } else {
+      setCasoReciente(null);
+    }
+  };
+
+  const handleReutilizarNosis = () => {
+    if (!casoReciente) return;
+    const ITEMS_NOSIS = [4, 8, 9, 10, 12, 13];
+    setChecklist((prev) =>
+      prev.map((item) => {
+        if (!ITEMS_NOSIS.includes(item.id)) return item;
+        const origen = casoReciente.checklist.find((c) => c.id === item.id);
+        return origen ? { ...item, respuesta: origen.respuesta, observacion: origen.observacion } : item;
+      })
+    );
+    const docsNosis = casoReciente.documentos.filter((d) => d.categoria === "nosis");
+    setDocumentos((prev) => [...prev.filter((d) => d.categoria !== "nosis"), ...docsNosis]);
+    setCasoReciente(null);
+  };
+
   // ── BCRA ──────────────────────────────────────────────────────
   const handleBCRALoaded = useCallback(
     (status: import("@/types").BCRAStatus) => {
@@ -74,7 +109,7 @@ export function CasoForm({ caso }: Props) {
   );
 
   // ── Resultado live ────────────────────────────────────────────
-  const { estado, motivos } = calcularEstadoGeneral(checklist, metricas);
+  const { estado, motivos } = calcularEstadoGeneral(checklist, metricas, documentos);
 
   // ── Submit ────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -158,7 +193,7 @@ export function CasoForm({ caso }: Props) {
             <input
               type="text"
               value={cuit}
-              onChange={(e) => setCuit(formatCUIT(e.target.value))}
+              onChange={(e) => handleCuitChange(e.target.value)}
               placeholder="20-12345678-9"
               maxLength={13}
               className="field-input font-mono"
@@ -277,6 +312,38 @@ export function CasoForm({ caso }: Props) {
           </div>
         </div>
       </CollapsibleSection>
+
+      {/* ─── Banner NOSIS reciente ──────────────────────────────── */}
+      {casoReciente && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-blue-800">
+              NOSIS reciente disponible
+            </p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              Este CUIT tiene una evaluación del{" "}
+              {new Date(casoReciente.creadoEn).toLocaleDateString("es-AR")} (
+              {casoReciente.denominacion}). Podés reutilizar el NOSIS y los datos crediticios.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleReutilizarNosis}
+              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Reutilizar NOSIS
+            </button>
+            <button
+              type="button"
+              onClick={() => setCasoReciente(null)}
+              className="text-xs text-blue-500 hover:text-blue-700 px-2"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ─── Checklist ─────────────────────────────────────────── */}
       <ChecklistSection items={checklist} onChange={setChecklist} />

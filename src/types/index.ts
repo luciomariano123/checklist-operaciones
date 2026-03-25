@@ -29,6 +29,8 @@ export interface ChecklistItemDef {
 // ─── Documentos ──────────────────────────────────────────────────────────────
 
 export type CategoriaDocumento =
+  | "nosis"
+  | "ddjj"
   | "eecc_ultimos_3"
   | "eecc_borrador"
   | "ventas_post_cierre"

@@ -41,7 +41,7 @@ export default function DetalleCasoPage() {
   return (
     <div className="px-8 py-8">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-slate-400 mb-6">
+      <div className="flex items-center gap-2 text-sm text-slate-400 mb-6 print:hidden">
         <a href="/" className="hover:text-slate-600">Panel</a>
         <span>/</span>
         <span className="text-slate-700 font-medium">{caso.denominacion || formatCUIT(caso.cuit)}</span>
@@ -73,7 +73,13 @@ export default function DetalleCasoPage() {
             <StatusBadge estado={caso.estadoGeneral} size="sm" />
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
+          <button
+            onClick={() => window.print()}
+            className="btn-secondary"
+          >
+            Exportar PDF
+          </button>
           <button
             onClick={() => router.push(`/casos/${caso.id}/editar`)}
             className="btn-secondary"

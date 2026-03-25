@@ -26,6 +26,11 @@ export const store = {
     return getAll().find((c) => c.id === id);
   },
 
+  getByCuit(cuit: string): Caso[] {
+    const normalized = cuit.replace(/[-\s]/g, "");
+    return getAll().filter((c) => c.cuit.replace(/[-\s]/g, "") === normalized);
+  },
+
   create(data: Omit<Caso, "id" | "creadoEn" | "actualizadoEn">): Caso {
     const now = new Date().toISOString();
     const caso: Caso = {

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import type { Documento, CategoriaDocumento } from "@/types";
-import { CATEGORIAS_DOCUMENTO } from "@/lib/checklist-config";
+import { CATEGORIAS_DOCUMENTO, CATEGORIAS_OBLIGATORIAS } from "@/lib/checklist-config";
 import { generarId } from "@/lib/calculations";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 
@@ -122,17 +122,27 @@ export function DocumentsSection({ documentos, onChange, readOnly = false, curre
         <div className="space-y-4">
           {byCategory.map(({ key, label, docs }) => {
             if (readOnly && docs.length === 0) return null;
+            const esObligatoria = CATEGORIAS_OBLIGATORIAS.includes(key);
+            const falta = esObligatoria && docs.length === 0;
             return (
-              <div key={key}>
+              <div key={key} className={falta && !readOnly ? "rounded-lg border border-amber-200 bg-amber-50 p-3" : ""}>
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="text-xs font-semibold text-slate-600">{label}</p>
+                  <p className={`text-xs font-semibold ${falta && !readOnly ? "text-amber-800" : "text-slate-600"}`}>{label}</p>
+                  {esObligatoria && (
+                    <span className="text-xs bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded-full font-bold">
+                      OBLIGATORIO
+                    </span>
+                  )}
                   {docs.length > 0 && (
                     <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
                       {docs.length}
                     </span>
                   )}
-                  {docs.length === 0 && (
+                  {docs.length === 0 && !esObligatoria && (
                     <span className="text-xs text-slate-400 italic">Sin documentos</span>
+                  )}
+                  {falta && !readOnly && (
+                    <span className="text-xs text-amber-700 italic">⚠ Requerido para aprobar</span>
                   )}
                 </div>
                 {docs.length > 0 && (
